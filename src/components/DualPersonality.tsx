@@ -1,92 +1,17 @@
+import { useState } from "react";
 import { useJourney } from "@/context/JourneyContext";
+import { motion } from "framer-motion";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-const getLogicalPerspective = (goal: string) => {
-  const lower = goal.toLowerCase();
-  const isTravel = lower.includes("hik") || lower.includes("travel") || lower.includes("visit") || lower.includes("trek");
-  const isLearn = lower.includes("learn") || lower.includes("study") || lower.includes("read") || lower.includes("course");
-  const isCreate = lower.includes("write") || lower.includes("build") || lower.includes("create") || lower.includes("paint") || lower.includes("cook");
-
-  if (isTravel) return {
-    verdict: "Feasible with planning",
-    points: [
-      "Research optimal routes, weather conditions, and peak seasons before committing.",
-      "Calculate total cost: transport, accommodation, gear, food, and emergency buffer.",
-      "Break it into phases — preparation, execution, and recovery time.",
-    ],
-    advice: "Start with logistics. A well-planned trip is a successful trip.",
-  };
-  if (isLearn) return {
-    verdict: "Achievable with structure",
-    points: [
-      "Define measurable milestones — what does 'done' look like?",
-      "Allocate focused time blocks. Consistency beats intensity.",
-      "Find the best resources: books, courses, mentors. Don't reinvent the wheel.",
-    ],
-    advice: "Set a schedule and track your progress objectively.",
-  };
-  if (isCreate) return {
-    verdict: "Requires discipline",
-    points: [
-      "Set a clear deliverable. Vague goals produce vague results.",
-      "Eliminate distractions during creative work blocks.",
-      "Iterate — first drafts aren't final. Plan for revision cycles.",
-    ],
-    advice: "Treat it like a project. Deadlines create momentum.",
-  };
-  return {
-    verdict: "Worth pursuing strategically",
-    points: [
-      `Define what success looks like for "${goal}" in concrete terms.`,
-      "Identify the biggest obstacle and address it first.",
-      "Set up accountability — tell someone, track progress, review daily.",
-    ],
-    advice: "Be methodical. Emotions fade; systems endure.",
-  };
-};
-
-const getEmotionalPerspective = (goal: string) => {
-  const lower = goal.toLowerCase();
-  const isTravel = lower.includes("hik") || lower.includes("travel") || lower.includes("visit") || lower.includes("trek");
-  const isLearn = lower.includes("learn") || lower.includes("study") || lower.includes("read") || lower.includes("course");
-  const isCreate = lower.includes("write") || lower.includes("build") || lower.includes("create") || lower.includes("paint") || lower.includes("cook");
-
-  if (isTravel) return {
-    verdict: "Your soul needs this",
-    points: [
-      "Imagine standing there — the wind, the light, the vastness. You deserve that moment.",
-      "Travel isn't about the destination. It's about who you become on the way.",
-      "The discomfort of the journey is what makes the memory unforgettable.",
-    ],
-    advice: "Don't overthink it. Some of the best trips start with a leap of faith.",
-  };
-  if (isLearn) return {
-    verdict: "This will change you",
-    points: [
-      "There's a version of you on the other side of this who thinks differently.",
-      "The frustration of not understanding is the feeling of growing.",
-      "You're not just learning a skill — you're expanding who you are.",
-    ],
-    advice: "Fall in love with the process, not just the outcome.",
-  };
-  if (isCreate) return {
-    verdict: "This is calling you",
-    points: [
-      "Something inside you needs to express this. Honor that impulse.",
-      "Perfection is the enemy of creation. Let it be messy, let it be real.",
-      "What you create will outlast this moment. That's a kind of immortality.",
-    ],
-    advice: "Create from the heart. The world needs your authentic voice.",
-  };
-  return {
-    verdict: "Life is asking you to try",
-    points: [
-      `"${goal}" — just saying it out loud makes your heart beat faster. That means something.`,
-      "Fear and excitement feel the same. Choose to call it excitement.",
-      "You'll regret the things you didn't do far more than the ones you did.",
-    ],
-    advice: "Trust yourself. You're more ready than you think.",
-  };
-};
+interface AIDecision {
+  decision: string;
+  reasoning: string;
+  actionStep: string;
+  confidence: number;
+}
 
 interface DualPersonalityProps {
   dayIndex: number;
@@ -95,27 +20,86 @@ interface DualPersonalityProps {
 const DualPersonality = ({ dayIndex }: DualPersonalityProps) => {
   const { days } = useJourney();
   const day = days[dayIndex];
+
+  const [logicalThought, setLogicalThought] = useState("");
+  const [emotionalThought, setEmotionalThought] = useState("");
+  const [aiDecision, setAiDecision] = useState<AIDecision | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!day) return null;
 
-  const logical = getLogicalPerspective(day.goal);
-  const emotional = getEmotionalPerspective(day.goal);
+  const handleDecide = async () => {
+    if (!logicalThought.trim() || !emotionalThought.trim()) {
+      toast.error("Please fill in both your logical and emotional perspectives.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("decide", {
+        body: {
+          goal: day.goal,
+          logicalThought: logicalThought.trim(),
+          emotionalThought: emotionalThought.trim(),
+        },
+      });
+
+      if (error) throw error;
+      setAiDecision(data as AIDecision);
+    } catch (e: any) {
+      console.error("Decision error:", e);
+      toast.error("Failed to get a decision. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const slideLeft = {
+    hidden: { opacity: 0, x: -80 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" as const } },
+  };
+
+  const slideRight = {
+    hidden: { opacity: 0, x: 80 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" as const } },
+  };
+
+  const fadeUp = {
+    hidden: { opacity: 0, y: 40 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+  };
 
   return (
     <section className="py-20 px-6">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-16">
+        <motion.div
+          className="text-center mb-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={fadeUp}
+        >
           <p className="font-sans-light text-xs tracking-[0.4em] uppercase text-secondary mb-3">
             Two Perspectives, One Decision
           </p>
           <h2 className="font-display text-3xl md:text-5xl font-medium text-foreground mb-4">
             The Dual You
           </h2>
-          <div className="w-16 h-px bg-primary mx-auto" />
-        </div>
+          <p className="font-body text-sm text-muted-foreground max-w-lg mx-auto">
+            Share what you're thinking logically and feeling emotionally about "{day.goal}" — and let AI make the call.
+          </p>
+          <div className="w-16 h-px bg-primary mx-auto mt-4" />
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-0 rounded-lg overflow-hidden journal-shadow">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-lg overflow-hidden journal-shadow">
           {/* Logical Side */}
-          <div className="bg-card p-8 md:p-10 border-b md:border-b-0 md:border-r border-border">
+          <motion.div
+            className="bg-card p-8 md:p-10 border-b md:border-b-0 md:border-r border-border"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={slideLeft}
+          >
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl">🧠</span>
               <h3 className="font-display text-xl font-medium text-foreground tracking-wide">
@@ -125,31 +109,22 @@ const DualPersonality = ({ dayIndex }: DualPersonalityProps) => {
             <p className="font-sans-light text-xs tracking-[0.2em] uppercase text-muted-foreground mb-6">
               The strategist within
             </p>
-
-            <div className="mb-6 px-4 py-3 rounded-md bg-muted/50 border border-border">
-              <p className="font-display text-sm italic text-foreground">
-                Verdict: {logical.verdict}
-              </p>
-            </div>
-
-            <ul className="space-y-4 mb-8">
-              {logical.points.map((point, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="font-display text-xs text-muted-foreground mt-1">{String(i + 1).padStart(2, "0")}</span>
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed">{point}</p>
-                </li>
-              ))}
-            </ul>
-
-            <div className="border-t border-border pt-5">
-              <p className="font-body text-sm italic text-foreground/80">
-                "{logical.advice}"
-              </p>
-            </div>
-          </div>
+            <Textarea
+              placeholder="What does your logical side think about this goal? Consider feasibility, costs, time, risks..."
+              value={logicalThought}
+              onChange={(e) => setLogicalThought(e.target.value)}
+              className="min-h-[160px] bg-muted/30 border-border font-body text-sm resize-none focus:ring-primary/30"
+            />
+          </motion.div>
 
           {/* Emotional Side */}
-          <div className="bg-accent/20 p-8 md:p-10">
+          <motion.div
+            className="bg-accent/20 p-8 md:p-10"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={slideRight}
+          >
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl">❤️</span>
               <h3 className="font-display text-xl font-medium text-foreground tracking-wide">
@@ -159,29 +134,83 @@ const DualPersonality = ({ dayIndex }: DualPersonalityProps) => {
             <p className="font-sans-light text-xs tracking-[0.2em] uppercase text-muted-foreground mb-6">
               The dreamer within
             </p>
-
-            <div className="mb-6 px-4 py-3 rounded-md bg-primary/10 border border-primary/20">
-              <p className="font-display text-sm italic text-foreground">
-                Verdict: {emotional.verdict}
-              </p>
-            </div>
-
-            <ul className="space-y-4 mb-8">
-              {emotional.points.map((point, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="font-display text-xs text-muted-foreground mt-1">{String(i + 1).padStart(2, "0")}</span>
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed">{point}</p>
-                </li>
-              ))}
-            </ul>
-
-            <div className="border-t border-border pt-5">
-              <p className="font-body text-sm italic text-foreground/80">
-                "{emotional.advice}"
-              </p>
-            </div>
-          </div>
+            <Textarea
+              placeholder="What does your heart say? How does this goal make you feel? What excites or scares you?"
+              value={emotionalThought}
+              onChange={(e) => setEmotionalThought(e.target.value)}
+              className="min-h-[160px] bg-primary/5 border-primary/20 font-body text-sm resize-none focus:ring-primary/30"
+            />
+          </motion.div>
         </div>
+
+        {/* Decide Button */}
+        <motion.div
+          className="text-center mt-10"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.5 }}
+          variants={fadeUp}
+        >
+          <Button
+            onClick={handleDecide}
+            disabled={isLoading || !logicalThought.trim() || !emotionalThought.trim()}
+            className="font-sans-light text-sm tracking-[0.2em] uppercase px-12 py-6 bg-primary text-primary-foreground rounded-lg journal-shadow hover:-translate-y-0.5 transition-all duration-500"
+          >
+            {isLoading ? "Thinking..." : "Make the Decision for Me ✨"}
+          </Button>
+        </motion.div>
+
+        {/* AI Decision Result */}
+        {aiDecision && (
+          <motion.div
+            className="mt-12 rounded-lg journal-shadow overflow-hidden"
+            initial={{ opacity: 0, y: 30, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            <div className="bg-gradient-warm p-8 md:p-10 text-center border-b border-border">
+              <p className="font-sans-light text-xs tracking-[0.4em] uppercase text-muted-foreground mb-3">
+                The Verdict
+              </p>
+              <h3 className="font-display text-2xl md:text-3xl font-medium text-foreground mb-2">
+                {aiDecision.decision}
+              </h3>
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <div className="h-2 w-24 rounded-full bg-muted overflow-hidden">
+                  <motion.div
+                    className="h-full bg-primary rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${aiDecision.confidence}%` }}
+                    transition={{ duration: 1, delay: 0.3 }}
+                  />
+                </div>
+                <span className="font-body text-xs text-muted-foreground">
+                  {aiDecision.confidence}% confident
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-card p-8 md:p-10 space-y-6">
+              <div>
+                <p className="font-sans-light text-xs tracking-[0.2em] uppercase text-muted-foreground mb-2">
+                  Why this decision
+                </p>
+                <p className="font-body text-sm text-foreground/80 leading-relaxed italic">
+                  "{aiDecision.reasoning}"
+                </p>
+              </div>
+
+              <div className="border-t border-border pt-5">
+                <p className="font-sans-light text-xs tracking-[0.2em] uppercase text-muted-foreground mb-2">
+                  Your next step
+                </p>
+                <p className="font-display text-base text-foreground">
+                  → {aiDecision.actionStep}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </section>
   );
