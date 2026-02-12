@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useJourney } from "@/context/JourneyContext";
 import DayBreakdown from "@/components/DayBreakdown";
+import DualPersonality from "@/components/DualPersonality";
 import ProgressTracker from "@/components/ProgressTracker";
 import PhotoGallery from "@/components/PhotoGallery";
 import JournalEntry from "@/components/JournalEntry";
@@ -65,6 +66,15 @@ const DayPage = () => {
 
       {/* Day breakdown */}
       <DayBreakdown dayIndex={dayIndex} />
+
+      {/* Dual Personality */}
+      <div className="flex items-center justify-center py-8">
+        <div className="w-1 h-1 rounded-full bg-accent" />
+        <div className="w-24 h-px bg-border mx-4" />
+        <div className="w-1 h-1 rounded-full bg-accent" />
+      </div>
+
+      <DualPersonality dayIndex={dayIndex} />
 
       {/* Divider */}
       <div className="flex items-center justify-center py-8">
