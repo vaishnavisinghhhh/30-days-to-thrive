@@ -5,7 +5,57 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  .light {
+    --background: 30 25% 95%;
+    --foreground: 20 20% 15%;
+
+    --card: 30 20% 92%;
+    --card-foreground: 20 20% 15%;
+
+    --popover: 30 25% 94%;
+    --popover-foreground: 20 20% 15%;
+
+    --primary: 8 55% 40%;
+    --primary-foreground: 30 20% 95%;
+
+    --secondary: 25 20% 85%;
+    --secondary-foreground: 20 20% 20%;
+
+    --muted: 25 15% 88%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 355 40% 45%;
+    --accent-foreground: 30 20% 95%;
+
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 30 20% 95%;
+
+    --border: 25 15% 82%;
+    --input: 25 15% 86%;
+    --ring: 8 55% 40%;
+
+    --radius: 0.75rem;
+
+    --cream: 30 25% 92%;
+    --warm-brown: 20 35% 55%;
+    --dusty-blue: 355 30% 50%;
+    --soft-blue: 355 25% 60%;
+    --deep-brown: 25 20% 88%;
+    --rose-mist: 350 30% 55%;
+    --sage: 20 20% 50%;
+
+    --sidebar-background: 30 20% 93%;
+    --sidebar-foreground: 20 20% 15%;
+    --sidebar-primary: 8 55% 40%;
+    --sidebar-primary-foreground: 30 20% 95%;
+    --sidebar-accent: 355 40% 45%;
+    --sidebar-accent-foreground: 20 20% 15%;
+    --sidebar-border: 25 15% 82%;
+    --sidebar-ring: 8 55% 40%;
+  }
+
+  .dark {
     --background: 20 15% 10%;
     --foreground: 30 20% 90%;
 
@@ -59,7 +109,7 @@
   * {
     @apply border-border;
   }
-  body {
+  body, html {
     @apply bg-background text-foreground;
     font-family: 'Lora', serif;
   }
