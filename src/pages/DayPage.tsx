@@ -13,7 +13,9 @@ const DayPage = () => {
   const dayNum = parseInt(dayNumber || "1", 10);
   const dayIndex = dayNum - 1;
 
-  if (!days.length || dayIndex < 0 || dayIndex >= 30) {
+  const totalDays = days.length;
+
+  if (!days.length || dayIndex < 0 || dayIndex >= totalDays) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -32,10 +34,10 @@ const DayPage = () => {
   }
 
   // Calculate days remaining
-  const daysRemaining = 30 - dayNum;
+  const daysRemaining = totalDays - dayNum;
 
   const goToNextDay = () => {
-    if (dayNum < 30) {
+    if (dayNum < totalDays) {
       navigate(`/day/${dayNum + 1}`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -108,7 +110,7 @@ const DayPage = () => {
 
       {/* Next day button */}
       <section className="py-24 px-6 text-center">
-        {dayNum < 30 ? (
+        {dayNum < totalDays ? (
           <button
             onClick={goToNextDay}
             className="group font-sans-light text-sm tracking-[0.2em] uppercase px-12 py-4 bg-primary text-primary-foreground rounded-lg journal-shadow hover:-translate-y-0.5 transition-all duration-500"
@@ -118,7 +120,7 @@ const DayPage = () => {
         ) : (
           <div>
             <h2 className="font-display text-4xl text-foreground mb-4">
-              Your 30 Days Are Complete
+              Your {totalDays} {totalDays === 1 ? "Day is" : "Days Are"} Complete
             </h2>
             <p className="font-body text-muted-foreground italic">
               You lived. You dreamed. You became.

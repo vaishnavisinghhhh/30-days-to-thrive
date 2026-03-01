@@ -24,7 +24,7 @@ const BucketListInput = () => {
 
   const handleContinue = () => {
     const filled = items.map((i) => i.trim()).filter(Boolean);
-    if (filled.length < 30) return;
+    if (filled.length < 1) return;
     setBucketList(filled);
     navigate("/day/1");
   };
@@ -94,18 +94,18 @@ const BucketListInput = () => {
         <div className="text-center mt-16">
           <button
             onClick={handleContinue}
-            disabled={filledCount < 30}
-            className={`font-sans-light text-sm tracking-[0.2em] uppercase px-12 py-4 rounded-lg transition-all duration-500 ${
-              filledCount >= 30
-                ? "bg-primary text-primary-foreground journal-shadow hover:-translate-y-0.5"
+            disabled={filledCount < 1}
+            className={`font-sans-light text-sm tracking-[0.2em] uppercase px-12 py-4 rounded-lg transition-all duration-700 ${
+              filledCount >= 1
+                ? "bg-primary text-primary-foreground journal-shadow hover:-translate-y-1 hover:shadow-2xl"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             }`}
           >
-            Begin the 30 Days →
+            Begin the {filledCount} {filledCount === 1 ? "Day" : "Days"} →
           </button>
-          {filledCount < 30 && (
+          {filledCount < 1 && (
             <p className="font-body text-xs text-muted-foreground mt-3 italic">
-              Fill all 30 dreams to continue
+              Enter at least one dream to continue
             </p>
           )}
         </div>

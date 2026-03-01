@@ -28,6 +28,7 @@ export const JourneyProvider = ({ children }: { children: ReactNode }) => {
 
   const setBucketList = (list: string[]) => {
     setBucketListState(list);
+    const totalDays = list.length;
     setDays(
       list.map((goal) => ({
         goal,
