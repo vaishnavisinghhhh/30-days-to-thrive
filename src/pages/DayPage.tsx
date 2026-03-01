@@ -5,6 +5,7 @@ import DualPersonality from "@/components/DualPersonality";
 import ProgressTracker from "@/components/ProgressTracker";
 import PhotoGallery from "@/components/PhotoGallery";
 import JournalEntry from "@/components/JournalEntry";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const DayPage = () => {
   const { dayNumber } = useParams();
@@ -45,6 +46,7 @@ const DayPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <ThemeToggle />
       {/* Day header */}
       <header className="relative py-24 px-6 text-center bg-gradient-warm">
         <button
