@@ -1,1 +1,7 @@
 project_id = "eggjprouxbgsdhvnbjnx"
+
+[functions.decide]
+verify_jwt = false
+
+[functions.generate-day-plan]
+verify_jwt = false
