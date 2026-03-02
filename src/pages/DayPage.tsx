@@ -3,30 +3,28 @@ import { useJourney } from "@/context/JourneyContext";
 import DayBreakdown from "@/components/DayBreakdown";
 import DualPersonality from "@/components/DualPersonality";
 import ProgressTracker from "@/components/ProgressTracker";
-import PhotoGallery from "@/components/PhotoGallery";
-import JournalEntry from "@/components/JournalEntry";
-import ThemeToggle from "@/components/ThemeToggle";
+import { ArrowLeft, BookOpen } from "lucide-react";
+import { useEffect } from "react";
 
 const DayPage = () => {
   const { dayNumber } = useParams();
   const navigate = useNavigate();
-  const { days, startDate } = useJourney();
+  const { days } = useJourney();
   const dayNum = parseInt(dayNumber || "1", 10);
   const dayIndex = dayNum - 1;
-
   const totalDays = days.length;
+
+  // Fix: scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [dayNum]);
 
   if (!days.length || dayIndex < 0 || dayIndex >= totalDays) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="font-display text-3xl text-foreground mb-4">
-            No journey started yet
-          </h1>
-          <button
-            onClick={() => navigate("/")}
-            className="font-sans-light text-sm tracking-[0.2em] uppercase text-primary hover:underline"
-          >
+          <h1 className="font-display text-3xl text-foreground mb-4">No journey started yet</h1>
+          <button onClick={() => navigate("/")} className="font-sans-light text-sm tracking-widest uppercase text-primary hover:underline">
             ← Start Your Journey
           </button>
         </div>
@@ -34,99 +32,73 @@ const DayPage = () => {
     );
   }
 
-  // Calculate days remaining
   const daysRemaining = totalDays - dayNum;
 
   const goToNextDay = () => {
-    if (dayNum < totalDays) {
-      navigate(`/day/${dayNum + 1}`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (dayNum < totalDays) navigate(`/day/${dayNum + 1}`);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <ThemeToggle />
-      {/* Day header */}
-      <header className="relative py-24 px-6 text-center bg-gradient-warm">
-        <button
-          onClick={() => navigate("/")}
-          className="absolute top-6 left-6 font-sans-light text-xs tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Back
+    <div className="min-h-screen bg-background pb-24">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border px-4 py-3 flex items-center justify-between">
+        <button onClick={() => navigate("/journey")} className="p-2 rounded-full hover:bg-muted transition-colors">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
+        <div className="text-center">
+          <h1 className="font-display text-lg font-medium text-foreground">Day {String(dayNum).padStart(2, "0")}</h1>
+          <p className="font-sans-light text-[10px] tracking-widest uppercase text-muted-foreground">
+            {daysRemaining} remaining
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(`/day/${dayNum}/journal`)}
+          className="p-2 rounded-full hover:bg-muted transition-colors"
+        >
+          <BookOpen className="w-5 h-5 text-primary" />
+        </button>
+      </div>
 
-        <p className="font-sans-light text-xs tracking-[0.4em] uppercase text-muted-foreground mb-3">
-          {daysRemaining} days remaining
-        </p>
-        <h1 className="font-display text-6xl md:text-8xl font-medium text-foreground mb-2">
-          Day {String(dayNum).padStart(2, "0")}
-        </h1>
-        <div className="w-12 h-px bg-primary mx-auto mt-6 mb-4" />
-        <p className="font-body text-muted-foreground italic text-lg">
-          {days[dayIndex].goal}
-        </p>
+      {/* Goal header */}
+      <header className="py-12 px-6 text-center bg-gradient-warm">
+        <p className="font-body text-muted-foreground italic text-lg">"{days[dayIndex].goal}"</p>
       </header>
 
-      {/* Day breakdown */}
+      {/* Day breakdown (logistics) */}
       <DayBreakdown dayIndex={dayIndex} />
 
-      {/* Dual Personality */}
+      {/* Divider */}
       <div className="flex items-center justify-center py-8">
         <div className="w-1 h-1 rounded-full bg-accent" />
         <div className="w-24 h-px bg-border mx-4" />
         <div className="w-1 h-1 rounded-full bg-accent" />
       </div>
 
+      {/* Decision AI */}
       <DualPersonality dayIndex={dayIndex} />
 
-      {/* Divider */}
+      {/* Progress tracker */}
       <div className="flex items-center justify-center py-8">
         <div className="w-1 h-1 rounded-full bg-accent" />
         <div className="w-24 h-px bg-border mx-4" />
         <div className="w-1 h-1 rounded-full bg-accent" />
       </div>
 
-      {/* Progress tracker */}
       <ProgressTracker dayIndex={dayIndex} />
 
-      {/* Divider */}
-      <div className="flex items-center justify-center py-8">
-        <div className="w-1 h-1 rounded-full bg-accent" />
-        <div className="w-24 h-px bg-border mx-4" />
-        <div className="w-1 h-1 rounded-full bg-accent" />
-      </div>
-
-      {/* Photo gallery */}
-      <PhotoGallery dayIndex={dayIndex} />
-
-      {/* Divider */}
-      <div className="flex items-center justify-center py-8">
-        <div className="w-1 h-1 rounded-full bg-accent" />
-        <div className="w-24 h-px bg-border mx-4" />
-        <div className="w-1 h-1 rounded-full bg-accent" />
-      </div>
-
-      {/* Journal */}
-      <JournalEntry dayIndex={dayIndex} />
-
-      {/* Next day button */}
-      <section className="py-24 px-6 text-center">
+      {/* Next day */}
+      <section className="py-16 px-6 text-center">
         {dayNum < totalDays ? (
           <button
             onClick={goToNextDay}
-            className="group font-sans-light text-sm tracking-[0.2em] uppercase px-12 py-4 bg-primary text-primary-foreground rounded-lg journal-shadow hover:-translate-y-0.5 transition-all duration-500"
+            className="font-sans-light text-sm tracking-widest uppercase px-12 py-4 bg-primary text-primary-foreground rounded-xl journal-shadow hover:-translate-y-0.5 transition-all duration-500"
           >
-            Go to Day {dayNum + 1} →
+            Day {dayNum + 1} →
           </button>
         ) : (
           <div>
-            <h2 className="font-display text-4xl text-foreground mb-4">
-              Your {totalDays} {totalDays === 1 ? "Day is" : "Days Are"} Complete
-            </h2>
-            <p className="font-body text-muted-foreground italic">
-              You lived. You dreamed. You became.
-            </p>
+            <h2 className="font-display text-4xl text-foreground mb-4">Journey Complete 🎉</h2>
+            <p className="font-body text-muted-foreground italic">You lived. You dreamed. You became.</p>
           </div>
         )}
       </section>
