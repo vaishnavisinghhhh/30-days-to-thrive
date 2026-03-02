@@ -14,7 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      day_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          journey_day_id: string
+          photo_url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          journey_day_id: string
+          photo_url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          journey_day_id?: string
+          photo_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_photos_journey_day_id_fkey"
+            columns: ["journey_day_id"]
+            isOneToOne: false
+            referencedRelation: "journey_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_days: {
+        Row: {
+          completed: boolean
+          created_at: string
+          day_number: number
+          goal: string
+          id: string
+          journal_entry: string | null
+          journey_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          day_number: number
+          goal: string
+          id?: string
+          journal_entry?: string | null
+          journey_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          day_number?: number
+          goal?: string
+          id?: string
+          journal_entry?: string | null
+          journey_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_days_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journeys: {
+        Row: {
+          created_at: string
+          id: string
+          is_completed: boolean
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          start_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

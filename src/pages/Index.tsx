@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import HeroSection from "@/components/HeroSection";
 import BucketListInput from "@/components/BucketListInput";
-import ThemeToggle from "@/components/ThemeToggle";
 
 const Index = () => {
   const bucketListRef = useRef<HTMLDivElement>(null);
@@ -11,8 +10,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <ThemeToggle />
+    <div className="min-h-screen bg-background pb-20">
       <HeroSection onScrollDown={scrollToBucketList} />
       <div ref={bucketListRef}>
         <BucketListInput />
