@@ -1,17 +1,21 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useJourney } from "@/context/JourneyContext";
-import { useRef } from "react";
-import { ArrowLeft, Camera, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, Camera, X, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const DayJournalPage = () => {
   const { dayNumber } = useParams();
   const navigate = useNavigate();
-  const { days, setDays } = useJourney();
+  const { days, saveDayJournal, saveDayCompletion, uploadPhoto, deletePhoto } = useJourney();
   const dayNum = parseInt(dayNumber || "1", 10);
   const dayIndex = dayNum - 1;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [localEntry, setLocalEntry] = useState(days[dayIndex]?.journalEntry || "");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   if (!days.length || dayIndex < 0 || dayIndex >= days.length) {
     return (
@@ -24,47 +28,40 @@ const DayJournalPage = () => {
   }
 
   const day = days[dayIndex];
-  const entry = day.journalEntry || "";
+  const wordCount = localEntry.split(/\s+/).filter(Boolean).length;
 
-  const handleTextChange = (value: string) => {
-    setDays((prev) => {
-      const updated = [...prev];
-      updated[dayIndex] = { ...updated[dayIndex], journalEntry: value };
-      return updated;
-    });
+  const handleSaveAndComplete = async () => {
+    setSaving(true);
+    await saveDayJournal(dayIndex, localEntry);
+    if (!day.completed) {
+      await saveDayCompletion(dayIndex, true);
+    }
+    toast.success("Day completed! 🎉");
+    setSaving(false);
+    navigate(`/day/${dayNum}`);
   };
 
-  const handleAddPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    await saveDayJournal(dayIndex, localEntry);
+    toast.success("Journal saved!");
+    setSaving(false);
+  };
+
+  const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setDays((prev) => {
-          const updated = [...prev];
-          updated[dayIndex] = {
-            ...updated[dayIndex],
-            photos: [...updated[dayIndex].photos, ev.target?.result as string],
-          };
-          return updated;
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    setUploading(true);
+    for (const file of Array.from(files)) {
+      await uploadPhoto(dayIndex, file);
+    }
+    setUploading(false);
+    toast.success("Photos added!");
   };
 
-  const removePhoto = (photoIndex: number) => {
-    setDays((prev) => {
-      const updated = [...prev];
-      updated[dayIndex] = {
-        ...updated[dayIndex],
-        photos: updated[dayIndex].photos.filter((_, i) => i !== photoIndex),
-      };
-      return updated;
-    });
+  const handleRemovePhoto = async (photoUrl: string) => {
+    await deletePhoto(dayIndex, photoUrl);
   };
-
-  const wordCount = entry.split(/\s+/).filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -74,14 +71,15 @@ const DayJournalPage = () => {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex-1">
-          <h1 className="font-display text-lg font-medium text-foreground">Day {dayNum}</h1>
+          <h1 className="font-display text-lg font-medium text-foreground">Day {dayNum} — Journal</h1>
           <p className="font-body text-xs text-muted-foreground italic line-clamp-1">{day.goal}</p>
         </div>
         <button
           onClick={() => fileRef.current?.click()}
           className="p-2 rounded-full hover:bg-muted transition-colors"
+          disabled={uploading}
         >
-          <Camera className="w-5 h-5 text-primary" />
+          <Camera className={`w-5 h-5 text-primary ${uploading ? "animate-pulse" : ""}`} />
         </button>
       </div>
 
@@ -90,16 +88,12 @@ const DayJournalPage = () => {
       <div className="px-6 max-w-lg mx-auto pt-6">
         {/* Photos grid */}
         {day.photos.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-3 gap-2 mb-6"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-2 mb-6">
             {day.photos.map((photo, i) => (
               <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
                 <img src={photo} alt="" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => removePhoto(i)}
+                  onClick={() => handleRemovePhoto(photo)}
                   className="absolute top-1 right-1 w-6 h-6 bg-destructive/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="w-3 h-3 text-destructive-foreground" />
@@ -118,11 +112,30 @@ const DayJournalPage = () => {
             <span className="font-sans-light text-xs text-muted-foreground">{wordCount} words</span>
           </div>
           <Textarea
-            value={entry}
-            onChange={(e) => handleTextChange(e.target.value)}
+            value={localEntry}
+            onChange={(e) => setLocalEntry(e.target.value)}
             placeholder="Write about your day... What did you feel? What surprised you? What will you remember?"
             className="min-h-[300px] bg-muted/30 border-border font-body text-sm resize-none focus:ring-primary/30 rounded-xl"
           />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={handleSaveDraft}
+            disabled={saving}
+            className="flex-1 font-sans-light text-sm tracking-widest uppercase py-3 border border-border rounded-xl hover:bg-muted/50 transition-colors text-foreground"
+          >
+            {saving ? "Saving..." : "Save Draft"}
+          </button>
+          <button
+            onClick={handleSaveAndComplete}
+            disabled={saving}
+            className="flex-1 font-sans-light text-sm tracking-widest uppercase py-3 bg-primary text-primary-foreground rounded-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
+          >
+            <Check className="w-4 h-4" />
+            {day.completed ? "Update & Done" : "Complete Day"}
+          </button>
         </div>
       </div>
     </div>

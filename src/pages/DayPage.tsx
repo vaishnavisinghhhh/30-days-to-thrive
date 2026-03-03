@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useJourney } from "@/context/JourneyContext";
 import DayBreakdown from "@/components/DayBreakdown";
-import DualPersonality from "@/components/DualPersonality";
-import ProgressTracker from "@/components/ProgressTracker";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { useEffect } from "react";
 
@@ -14,7 +12,6 @@ const DayPage = () => {
   const dayIndex = dayNum - 1;
   const totalDays = days.length;
 
-  // Fix: scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [dayNum]);
@@ -62,45 +59,44 @@ const DayPage = () => {
       {/* Goal header */}
       <header className="py-12 px-6 text-center bg-gradient-warm">
         <p className="font-body text-muted-foreground italic text-lg">"{days[dayIndex].goal}"</p>
+        {days[dayIndex].completed && (
+          <span className="inline-block mt-3 font-sans-light text-xs tracking-widest uppercase text-primary bg-primary/10 px-3 py-1 rounded-full">
+            ✓ Completed
+          </span>
+        )}
       </header>
 
       {/* Day breakdown (logistics) */}
       <DayBreakdown dayIndex={dayIndex} />
 
-      {/* Divider */}
-      <div className="flex items-center justify-center py-8">
-        <div className="w-1 h-1 rounded-full bg-accent" />
-        <div className="w-24 h-px bg-border mx-4" />
-        <div className="w-1 h-1 rounded-full bg-accent" />
-      </div>
-
-      {/* Decision AI */}
-      <DualPersonality dayIndex={dayIndex} />
-
-      {/* Progress tracker */}
-      <div className="flex items-center justify-center py-8">
-        <div className="w-1 h-1 rounded-full bg-accent" />
-        <div className="w-24 h-px bg-border mx-4" />
-        <div className="w-1 h-1 rounded-full bg-accent" />
-      </div>
-
-      <ProgressTracker dayIndex={dayIndex} />
-
-      {/* Next day */}
+      {/* Navigation */}
       <section className="py-16 px-6 text-center">
-        {dayNum < totalDays ? (
+        <div className="flex flex-col gap-4 items-center">
           <button
-            onClick={goToNextDay}
+            onClick={() => navigate(`/day/${dayNum}/journal`)}
             className="font-sans-light text-sm tracking-widest uppercase px-12 py-4 bg-primary text-primary-foreground rounded-xl journal-shadow hover:-translate-y-0.5 transition-all duration-500"
           >
-            Day {dayNum + 1} →
+            {days[dayIndex].completed ? "View Journal" : "Write Journal & Complete"} →
           </button>
-        ) : (
-          <div>
-            <h2 className="font-display text-4xl text-foreground mb-4">Journey Complete 🎉</h2>
-            <p className="font-body text-muted-foreground italic">You lived. You dreamed. You became.</p>
-          </div>
-        )}
+
+          {dayNum < totalDays && (
+            <button
+              onClick={goToNextDay}
+              className="font-sans-light text-sm tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Skip to Day {dayNum + 1} →
+            </button>
+          )}
+
+          {dayNum >= totalDays && days.every(d => d.completed) && (
+            <button
+              onClick={() => navigate("/magazine")}
+              className="font-sans-light text-sm tracking-widest uppercase px-12 py-4 border border-primary text-primary rounded-xl hover:-translate-y-0.5 transition-all duration-500 mt-4"
+            >
+              View Your Magazine 📖
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );

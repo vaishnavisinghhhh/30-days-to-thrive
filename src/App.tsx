@@ -6,12 +6,15 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { JourneyProvider } from "@/context/JourneyContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import BottomNav from "@/components/BottomNav";
+import HuskyMascot from "@/components/HuskyMascot";
 import Index from "./pages/Index";
 import DayPage from "./pages/DayPage";
 import DayJournalPage from "./pages/DayJournalPage";
 import JourneyPage from "./pages/JourneyPage";
 import JournalPage from "./pages/JournalPage";
 import ProfilePage from "./pages/ProfilePage";
+import ChatbotPage from "./pages/ChatbotPage";
+import MagazinePage from "./pages/MagazinePage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -51,9 +54,12 @@ const AppRoutes = () => {
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/day/:dayNumber" element={<ProtectedRoute><DayPage /></ProtectedRoute>} />
         <Route path="/day/:dayNumber/journal" element={<ProtectedRoute><DayJournalPage /></ProtectedRoute>} />
+        <Route path="/chatbot" element={<ProtectedRoute><ChatbotPage /></ProtectedRoute>} />
+        <Route path="/magazine" element={<ProtectedRoute><MagazinePage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {user && <BottomNav />}
+      {user && <HuskyMascot />}
     </>
   );
 };

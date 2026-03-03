@@ -4,8 +4,16 @@ import { motion } from "framer-motion";
 import { BookOpen, Camera } from "lucide-react";
 
 const JournalPage = () => {
-  const { days } = useJourney();
+  const { days, loading } = useJourney();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
+        <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+      </div>
+    );
+  }
 
   if (!days.length) {
     return (
