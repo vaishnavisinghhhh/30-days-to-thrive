@@ -5,16 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LogOut, User, Moon, Sun } from "lucide-react";
+import { LogOut, User, Lock, Unlock, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const ProfilePage = () => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { days } = useJourney();
+  const navigate = useNavigate();
   const [editName, setEditName] = useState(profile?.display_name || "");
   const [saving, setSaving] = useState(false);
 
+  // App lock state (stored in localStorage)
+  const [isLockEnabled, setIsLockEnabled] = useState(() => localStorage.getItem("app-lock-enabled") === "true");
+  const [lockPin, setLockPin] = useState("");
+  const [showPinInput, setShowPinInput] = useState(false);
+
   const completedDays = days.filter((d) => d.completed).length;
+  const totalPhotos = days.reduce((acc, d) => acc + d.photos.length, 0);
+  const totalWords = days.reduce((acc, d) => acc + (d.journalEntry?.split(/\s+/).filter(Boolean).length || 0), 0);
+  const allDone = completedDays === days.length && days.length > 0;
 
   const handleSave = async () => {
     if (!user) return;
@@ -23,13 +33,36 @@ const ProfilePage = () => {
       .from("profiles")
       .update({ display_name: editName, updated_at: new Date().toISOString() })
       .eq("user_id", user.id);
-    if (error) {
-      toast.error("Failed to update profile");
-    } else {
+    if (error) toast.error("Failed to update profile");
+    else {
       toast.success("Profile updated!");
       await refreshProfile();
     }
     setSaving(false);
+  };
+
+  const handleToggleLock = () => {
+    if (isLockEnabled) {
+      localStorage.removeItem("app-lock-enabled");
+      localStorage.removeItem("app-lock-pin");
+      setIsLockEnabled(false);
+      toast.success("App lock disabled");
+    } else {
+      setShowPinInput(true);
+    }
+  };
+
+  const handleSetPin = () => {
+    if (lockPin.length < 4) {
+      toast.error("PIN must be at least 4 digits");
+      return;
+    }
+    localStorage.setItem("app-lock-enabled", "true");
+    localStorage.setItem("app-lock-pin", lockPin);
+    setIsLockEnabled(true);
+    setShowPinInput(false);
+    setLockPin("");
+    toast.success("App lock enabled! 🔒");
   };
 
   return (
@@ -43,42 +76,52 @@ const ProfilePage = () => {
             <User className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h2 className="font-display text-xl text-foreground">
-              {profile?.display_name || "Explorer"}
-            </h2>
+            <h2 className="font-display text-xl text-foreground">{profile?.display_name || "Explorer"}</h2>
             <p className="font-body text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-card rounded-xl p-4 text-center journal-shadow">
-            <span className="font-display text-2xl text-foreground block">{days.length}</span>
-            <span className="font-sans-light text-[10px] tracking-widest uppercase text-muted-foreground">Goals</span>
+        <div className="grid grid-cols-4 gap-2 mb-8">
+          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
+            <span className="font-display text-xl text-foreground block">{days.length}</span>
+            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Goals</span>
           </div>
-          <div className="bg-card rounded-xl p-4 text-center journal-shadow">
-            <span className="font-display text-2xl text-primary block">{completedDays}</span>
-            <span className="font-sans-light text-[10px] tracking-widest uppercase text-muted-foreground">Done</span>
+          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
+            <span className="font-display text-xl text-primary block">{completedDays}</span>
+            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Done</span>
           </div>
-          <div className="bg-card rounded-xl p-4 text-center journal-shadow">
-            <span className="font-display text-2xl text-foreground block">
-              {days.length ? Math.round((completedDays / days.length) * 100) : 0}%
-            </span>
-            <span className="font-sans-light text-[10px] tracking-widest uppercase text-muted-foreground">Progress</span>
+          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
+            <span className="font-display text-xl text-foreground block">{totalPhotos}</span>
+            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Photos</span>
+          </div>
+          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
+            <span className="font-display text-xl text-foreground block">{totalWords}</span>
+            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Words</span>
           </div>
         </div>
 
+        {/* Magazine link */}
+        {allDone && (
+          <button
+            onClick={() => navigate("/magazine")}
+            className="w-full bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl p-5 journal-shadow mb-6 flex items-center gap-3 hover:scale-[1.01] transition-transform"
+          >
+            <Trophy className="w-6 h-6 text-primary" />
+            <div className="text-left">
+              <p className="font-display text-lg text-foreground">Your Magazine is Ready!</p>
+              <p className="font-sans-light text-xs tracking-widest uppercase text-primary">View 30-day recap →</p>
+            </div>
+          </button>
+        )}
+
         {/* Edit name */}
-        <div className="bg-card rounded-2xl p-5 journal-shadow mb-6">
+        <div className="bg-card rounded-2xl p-5 journal-shadow mb-4">
           <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground mb-2 block">
             Display Name
           </label>
           <div className="flex gap-2">
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="bg-muted/50 border-border flex-1"
-            />
+            <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-muted/50 border-border flex-1" />
             <Button onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground">
               {saving ? "..." : "Save"}
             </Button>
@@ -86,19 +129,46 @@ const ProfilePage = () => {
         </div>
 
         {/* Theme toggle */}
-        <div className="bg-card rounded-2xl p-5 journal-shadow mb-6">
+        <div className="bg-card rounded-2xl p-5 journal-shadow mb-4">
           <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground mb-3 block">
             Appearance
           </label>
           <ThemeToggle inline />
         </div>
 
+        {/* App Lock */}
+        <div className="bg-card rounded-2xl p-5 journal-shadow mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground">
+              App Lock
+            </label>
+            {isLockEnabled ? (
+              <Lock className="w-4 h-4 text-primary" />
+            ) : (
+              <Unlock className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+          {showPinInput ? (
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                value={lockPin}
+                onChange={(e) => setLockPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="Enter 4-6 digit PIN"
+                className="bg-muted/50 border-border flex-1"
+              />
+              <Button onClick={handleSetPin} className="bg-primary text-primary-foreground">Set</Button>
+              <Button onClick={() => { setShowPinInput(false); setLockPin(""); }} variant="outline">Cancel</Button>
+            </div>
+          ) : (
+            <Button onClick={handleToggleLock} variant="outline" className="w-full">
+              {isLockEnabled ? "Disable Lock" : "Enable PIN Lock"}
+            </Button>
+          )}
+        </div>
+
         {/* Sign out */}
-        <Button
-          onClick={signOut}
-          variant="outline"
-          className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
-        >
+        <Button onClick={signOut} variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
         </Button>

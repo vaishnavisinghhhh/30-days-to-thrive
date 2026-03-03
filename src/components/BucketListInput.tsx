@@ -1,9 +1,11 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJourney } from "@/context/JourneyContext";
+import { toast } from "sonner";
 
 const BucketListInput = () => {
   const [items, setItems] = useState<string[]>(Array(30).fill(""));
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { setBucketList } = useJourney();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -22,11 +24,21 @@ const BucketListInput = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const filled = items.map((i) => i.trim()).filter(Boolean);
     if (filled.length < 1) return;
-    setBucketList(filled);
-    navigate("/day/1");
+    setSaving(true);
+    try {
+      await setBucketList(filled);
+      toast.success("Journey created! 🎉");
+      // Navigate to journey page and scroll to top
+      navigate("/journey");
+      window.scrollTo(0, 0);
+    } catch {
+      toast.error("Failed to create journey");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -44,7 +56,6 @@ const BucketListInput = () => {
             Thirty days. Thirty dreams. Write down everything you'd do if time were
             the most precious currency you had.
           </p>
-          {/* Progress */}
           <div className="mt-8 flex items-center justify-center gap-3">
             <span className="font-sans-light text-sm text-muted-foreground">
               {filledCount} / 30
@@ -58,7 +69,7 @@ const BucketListInput = () => {
           </div>
         </div>
 
-        {/* Pinterest-style grid */}
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((item, index) => (
             <div
@@ -94,14 +105,14 @@ const BucketListInput = () => {
         <div className="text-center mt-16">
           <button
             onClick={handleContinue}
-            disabled={filledCount < 1}
+            disabled={filledCount < 1 || saving}
             className={`font-sans-light text-sm tracking-[0.2em] uppercase px-12 py-4 rounded-lg transition-all duration-700 ${
-              filledCount >= 1
+              filledCount >= 1 && !saving
                 ? "bg-primary text-primary-foreground journal-shadow hover:-translate-y-1 hover:shadow-2xl"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             }`}
           >
-            Begin the {filledCount} {filledCount === 1 ? "Day" : "Days"} →
+            {saving ? "Creating Journey..." : `Begin the ${filledCount} ${filledCount === 1 ? "Day" : "Days"} →`}
           </button>
           {filledCount < 1 && (
             <p className="font-body text-xs text-muted-foreground mt-3 italic">
