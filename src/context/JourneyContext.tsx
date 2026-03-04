@@ -25,6 +25,7 @@ interface JourneyContextType {
   saveDayCompletion: (dayIndex: number, completed: boolean) => Promise<void>;
   uploadPhoto: (dayIndex: number, file: File) => Promise<string | null>;
   deletePhoto: (dayIndex: number, photoUrl: string) => Promise<void>;
+  addMoreDays: (newGoals: string[]) => Promise<void>;
 }
 
 const JourneyContext = createContext<JourneyContextType | undefined>(undefined);
@@ -240,12 +241,50 @@ export const JourneyProvider = ({ children }: { children: ReactNode }) => {
     await supabase.from("day_photos").delete().eq("photo_url", photoUrl);
   }, []);
 
+  const addMoreDays = useCallback(async (newGoals: string[]) => {
+    if (!journeyId || !user || newGoals.length === 0) return;
+    const currentCount = days.length;
+    if (currentCount >= 30) return;
+    const goalsToAdd = newGoals.slice(0, 30 - currentCount);
+
+    try {
+      const dayRows = goalsToAdd.map((goal, i) => ({
+        journey_id: journeyId,
+        day_number: currentCount + i + 1,
+        goal,
+      }));
+
+      const { data: insertedDays, error } = await supabase
+        .from("journey_days")
+        .insert(dayRows)
+        .select();
+
+      if (error) throw error;
+
+      const newDayData = (insertedDays || [])
+        .sort((a, b) => a.day_number - b.day_number)
+        .map(d => ({
+          id: d.id,
+          goal: d.goal,
+          completed: false,
+          photos: [],
+          journalEntry: "",
+        }));
+
+      setDays(prev => [...prev, ...newDayData]);
+      setBucketListState(prev => [...prev, ...goalsToAdd]);
+    } catch (e) {
+      console.error("Failed to add days:", e);
+      throw e;
+    }
+  }, [journeyId, user, days.length]);
+
   return (
     <JourneyContext.Provider
       value={{
         bucketList, setBucketList, days, setDays, currentDay, setCurrentDay,
         startDate, setStartDate, journeyId, loading,
-        saveDayJournal, saveDayCompletion, uploadPhoto, deletePhoto,
+        saveDayJournal, saveDayCompletion, uploadPhoto, deletePhoto, addMoreDays,
       }}
     >
       {children}
