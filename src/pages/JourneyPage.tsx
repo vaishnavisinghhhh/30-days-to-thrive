@@ -1,8 +1,9 @@
 import { useJourney } from "@/context/JourneyContext";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useEffect } from "react";
-import { BookOpen } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
+import { BookOpen, Plus, X } from "lucide-react";
+import { toast } from "sonner";
 
 const chapters = [
   { name: "Awakening", emoji: "🌅", desc: "The first sparks of courage" },
@@ -13,8 +14,12 @@ const chapters = [
 ];
 
 const JourneyPage = () => {
-  const { days, loading } = useJourney();
+  const { days, loading, addMoreDays } = useJourney();
   const navigate = useNavigate();
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [newItems, setNewItems] = useState<string[]>(Array(5).fill(""));
+  const [saving, setSaving] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -128,6 +133,92 @@ const JourneyPage = () => {
             );
           })}
         </div>
+
+        {/* Add More Dreams */}
+        {days.length < 30 && (
+          <>
+            {!showAddPanel ? (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={() => setShowAddPanel(true)}
+                className="w-full mt-6 py-4 rounded-2xl border-2 border-dashed border-border bg-card/50 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="font-sans-light text-sm tracking-widest uppercase">
+                  Add More Dreams ({days.length}/30)
+                </span>
+              </motion.button>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 bg-card rounded-2xl p-5 journal-shadow"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-lg text-foreground">Add Dreams</h3>
+                  <button onClick={() => setShowAddPanel(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="font-body text-xs text-muted-foreground mb-4 italic">
+                  You can add up to {30 - days.length} more {30 - days.length === 1 ? "dream" : "dreams"}.
+                </p>
+                <div className="space-y-2">
+                  {newItems.slice(0, 30 - days.length).map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="font-display text-lg font-medium text-accent w-6 text-right">
+                        {String(days.length + i + 1).padStart(2, "0")}
+                      </span>
+                      <input
+                        ref={el => (inputRefs.current[i] = el)}
+                        type="text"
+                        value={item}
+                        onChange={e => {
+                          const updated = [...newItems];
+                          updated[i] = e.target.value;
+                          setNewItems(updated);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && i < Math.min(newItems.length, 30 - days.length) - 1) {
+                            inputRefs.current[i + 1]?.focus();
+                          }
+                        }}
+                        placeholder="What would you do?"
+                        className="flex-1 bg-muted/50 rounded-lg px-3 py-2 font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={async () => {
+                    const filled = newItems.map(i => i.trim()).filter(Boolean);
+                    if (!filled.length) return;
+                    setSaving(true);
+                    try {
+                      await addMoreDays(filled);
+                      toast.success(`Added ${filled.length} new ${filled.length === 1 ? "dream" : "dreams"}!`);
+                      setNewItems(Array(5).fill(""));
+                      setShowAddPanel(false);
+                    } catch {
+                      toast.error("Failed to add dreams");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={!newItems.some(i => i.trim()) || saving}
+                  className={`mt-4 w-full py-3 rounded-xl font-sans-light text-sm tracking-widest uppercase transition-all ${
+                    newItems.some(i => i.trim()) && !saving
+                      ? "bg-primary text-primary-foreground hover:opacity-90"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  }`}
+                >
+                  {saving ? "Adding..." : "Add Dreams"}
+                </button>
+              </motion.div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
