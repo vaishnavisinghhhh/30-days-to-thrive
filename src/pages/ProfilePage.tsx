@@ -1,6 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
 import { useJourney } from "@/context/JourneyContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -10,13 +9,11 @@ import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const ProfilePage = () => {
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, signOut, updateProfile } = useAuth();
   const { days } = useJourney();
   const navigate = useNavigate();
   const [editName, setEditName] = useState(profile?.display_name || "");
-  const [saving, setSaving] = useState(false);
 
-  // App lock state (stored in localStorage)
   const [isLockEnabled, setIsLockEnabled] = useState(() => localStorage.getItem("app-lock-enabled") === "true");
   const [lockPin, setLockPin] = useState("");
   const [showPinInput, setShowPinInput] = useState(false);
@@ -26,19 +23,9 @@ const ProfilePage = () => {
   const totalWords = days.reduce((acc, d) => acc + (d.journalEntry?.split(/\s+/).filter(Boolean).length || 0), 0);
   const allDone = completedDays === days.length && days.length > 0;
 
-  const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ display_name: editName, updated_at: new Date().toISOString() })
-      .eq("user_id", user.id);
-    if (error) toast.error("Failed to update profile");
-    else {
-      toast.success("Profile updated!");
-      await refreshProfile();
-    }
-    setSaving(false);
+  const handleSave = () => {
+    updateProfile({ display_name: editName });
+    toast.success("Profile updated!");
   };
 
   const handleToggleLock = () => {
@@ -70,7 +57,6 @@ const ProfilePage = () => {
       <div className="px-6 max-w-lg mx-auto">
         <h1 className="font-display text-3xl font-medium text-foreground mb-8">Profile</h1>
 
-        {/* Avatar area */}
         <div className="flex items-center gap-4 mb-8">
           <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
             <User className="w-8 h-8 text-primary" />
@@ -81,27 +67,20 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-4 gap-2 mb-8">
-          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
-            <span className="font-display text-xl text-foreground block">{days.length}</span>
-            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Goals</span>
-          </div>
-          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
-            <span className="font-display text-xl text-primary block">{completedDays}</span>
-            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Done</span>
-          </div>
-          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
-            <span className="font-display text-xl text-foreground block">{totalPhotos}</span>
-            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Photos</span>
-          </div>
-          <div className="bg-card rounded-xl p-3 text-center journal-shadow">
-            <span className="font-display text-xl text-foreground block">{totalWords}</span>
-            <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">Words</span>
-          </div>
+          {[
+            { value: days.length, label: "Goals" },
+            { value: completedDays, label: "Done", highlight: true },
+            { value: totalPhotos, label: "Photos" },
+            { value: totalWords, label: "Words" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-card rounded-xl p-3 text-center journal-shadow">
+              <span className={`font-display text-xl block ${stat.highlight ? "text-primary" : "text-foreground"}`}>{stat.value}</span>
+              <span className="font-sans-light text-[9px] tracking-widest uppercase text-muted-foreground">{stat.label}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Magazine link */}
         {allDone && (
           <button
             onClick={() => navigate("/magazine")}
@@ -115,48 +94,29 @@ const ProfilePage = () => {
           </button>
         )}
 
-        {/* Edit name */}
         <div className="bg-card rounded-2xl p-5 journal-shadow mb-4">
           <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground mb-2 block">
             Display Name
           </label>
           <div className="flex gap-2">
             <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-muted/50 border-border flex-1" />
-            <Button onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground">
-              {saving ? "..." : "Save"}
-            </Button>
+            <Button onClick={handleSave} className="bg-primary text-primary-foreground">Save</Button>
           </div>
         </div>
 
-        {/* Theme toggle */}
         <div className="bg-card rounded-2xl p-5 journal-shadow mb-4">
-          <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground mb-3 block">
-            Appearance
-          </label>
+          <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground mb-3 block">Appearance</label>
           <ThemeToggle inline />
         </div>
 
-        {/* App Lock */}
         <div className="bg-card rounded-2xl p-5 journal-shadow mb-6">
           <div className="flex items-center justify-between mb-3">
-            <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground">
-              App Lock
-            </label>
-            {isLockEnabled ? (
-              <Lock className="w-4 h-4 text-primary" />
-            ) : (
-              <Unlock className="w-4 h-4 text-muted-foreground" />
-            )}
+            <label className="font-sans-light text-xs tracking-widest uppercase text-muted-foreground">App Lock</label>
+            {isLockEnabled ? <Lock className="w-4 h-4 text-primary" /> : <Unlock className="w-4 h-4 text-muted-foreground" />}
           </div>
           {showPinInput ? (
             <div className="flex gap-2">
-              <Input
-                type="password"
-                value={lockPin}
-                onChange={(e) => setLockPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="Enter 4-6 digit PIN"
-                className="bg-muted/50 border-border flex-1"
-              />
+              <Input type="password" value={lockPin} onChange={(e) => setLockPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Enter 4-6 digit PIN" className="bg-muted/50 border-border flex-1" />
               <Button onClick={handleSetPin} className="bg-primary text-primary-foreground">Set</Button>
               <Button onClick={() => { setShowPinInput(false); setLockPin(""); }} variant="outline">Cancel</Button>
             </div>
@@ -167,7 +127,6 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Sign out */}
         <Button onClick={signOut} variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
